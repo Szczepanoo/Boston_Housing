@@ -1,51 +1,41 @@
+import numpy as np
 import pandas as pd
+import os
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from keras.models import Sequential
-from keras.layers import Dense
-import matplotlib.pyplot as plt
 
-# Wczytanie danych
-column_names = ['CRIM', 'ZN', 'INDUS', 'CHAS', 'NOX', 'RM', 'AGE',
-                'DIS', 'RAD', 'TAX', 'PTRATIO', 'B', 'LSTAT', 'MEDV', 'BIAS_COL']
+def sigmoid_activation(X):
+    return 1/(1+np.exp(-X))
 
-df = pd.read_csv('hou_all.csv', header=None, names=column_names)
+def sigmoid_derivative(X):
+    return X * (1-X)
 
-X = df.drop(columns=['MEDV', 'BIAS_COL'])
-y = df['MEDV']
+def predict(X,W):
+    return sigmoid_activation(np.dot(X,W))
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+data = pd.read_csv('hou_all.csv', header=None, names=('CRIM', 'ZN', 'INDUS', 'CHAS', 'NOX',
+                                                      'RM', 'AGE', 'DIS', 'RAD', 'TAX',
+                                                      'PTRATIO', 'B', 'LSTAT', 'MEDV', 'BIAS_COL'))
 
-# Podział danych na cechy (X) i etykietę (y)
-X = df.drop(columns=['MEDV', 'BIAS_COL'])
-y = df['MEDV']
 
-# Normalizacja danych
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
+X = data.drop('MEDV', axis=1)
+y = data.iloc[:, 13]
+epochs = 100
+learning_rate = 1
+# print(X)
+# print(y)
 
-# Tworzenie modelu sieci neuronowej
-model = Sequential()
-model.add(Dense(64, input_shape=(X_train.shape[1],), activation='relu'))
-model.add(Dense(64, activation='relu'))
-model.add(Dense(1, activation='linear'))
 
-# Kompilacja modelu
-model.compile(optimizer='adam', loss='mean_squared_error')
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=32)
+W = np.random.randn(X.shape[1])
+# print(W)
 
-# Trenowanie modelu
-history = model.fit(X_train_scaled, y_train, epochs=100, batch_size=32, validation_split=0.2, verbose=0)
+losses = []
+for epoch in range(epochs):
+    prediction = predict(X_train,W)
+    # print(prediction)
+    errors = y_train - prediction
+    losses.append(errors.sum())
 
-# Ocena modelu na danych testowych
-test_loss, test_accuracy = model.evaluate(X_test_scaled, y_test)
+    W += -learning_rate * X_train.T.dot(errors)
 
-# Wykresy przebiegu nauki
-plt.plot(history.history['accuracy'], label='accuracy')
-plt.plot(history.history['val_accuracy'], label='val_accuracy')
-plt.plot(history.history['loss'], label='loss')
-plt.plot(history.history['val_loss'], label='val_loss')
-plt.xlabel('Epoch')
-plt.ylabel('Accuracy')
-plt.legend(loc='center right')
-plt.show()
+print(losses)
