@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import os
 from sklearn.model_selection import train_test_split
 
 def sigmoid_activation(X):
@@ -19,8 +18,8 @@ data = pd.read_csv('hou_all.csv', header=None, names=('CRIM', 'ZN', 'INDUS', 'CH
 
 X = data.drop('MEDV', axis=1)
 y = data.iloc[:, 13]
-epochs = 100
-learning_rate = 1
+epochs = 50
+learning_rate = 0.01
 # print(X)
 # print(y)
 
@@ -34,8 +33,12 @@ for epoch in range(epochs):
     prediction = predict(X_train,W)
     # print(prediction)
     errors = y_train - prediction
-    losses.append(errors.sum())
+    losses.append(np.sum(errors**2))
 
-    W += -learning_rate * X_train.T.dot(errors)
+    d = errors*sigmoid_derivative(prediction)
+
+    gradient = X_train.T.dot(d)
+
+    W += -learning_rate * gradient
 
 print(losses)
